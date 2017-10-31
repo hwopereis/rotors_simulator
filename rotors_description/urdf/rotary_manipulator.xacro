@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<!--
+  Xacro file designed 
+-->
+
+<!-- xacro root -->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Included macro files -->
+  <!--xacro:include filename="$(find rotors_description)/urdf/inertia.xacro" /-->
+
+  <!-- Definition of the macro -->
+  <xacro:macro name="rotary_manipulator"
+    params="robot_namespace
+      parent
+      link_mass
+      link_length
+      end_effector_mass
+      end_effector_radius
+      color
+      damping
+      friction
+      effort
+      *origin">
+
+    <!-- joint -->
+    <joint name="${robot_namespace}/rotary_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <axis xyz="0 0 0" />
+      <parent link="${parent}" />
+      <child link="${robot_namespace}/link" />
+      <dynamics damping="${damping}" friction="${friction}"/>
+      <limit lower="-3.14" upper="3.14" effort="${effort}" velocity="6.28"/>
+    </joint>
+
+    <!-- link -->
+    <link name="${robot_namespace}/link">
+      <!-- Inertial properties -->
+       <inertial>
+         <mass value="${link_mass}" />
+         <origin xyz="${link_length/2} 0 0" rpy="0 1.57 0"/>
+         <inertia ixx="${0.0833333 * link_mass * link_length}" ixy="0.0" ixz="0.0"
+         iyy="0.0" iyz="0.0"
+         izz="${0.0833333 * link_mass * link_length}" />
+       </inertial>
+          
+      <!-- Visual properties -->
+      <visual>
+        <origin xyz="0 0 0" rpy="0 1.57 0"/>
+        <geometry>
+          <cylinder length="${link_length}" radius="${link_length/25}"/>
+        </geometry>
+      </visual>
+    </link>
+    <!-- Gazebo material -->
+    <gazebo reference="${robot_namespace}/link">
+      <material>Gazebo/${color}</material>
+    </gazebo>
+
+    <!-- joint -->
+    <joint name="${robot_namespace}/contact_joint" type="prismatic">
+      <origin xyz="${link_length/2} 0 0" />
+      <axis xyz="1 0 0" />
+      
+      <parent link="${robot_namespace}/link" />
+      <child link="${robot_namespace}/contact_link" />
+      <dynamics damping="0" friction="0"/>
+      <limit lower="-0.05" upper="0.05" effort="100" velocity="6.28"/>
+    </joint>
+
+    <!-- contact link -->
+    <link name="${robot_namespace}/contact_link">
+      <!-- Inertial properties -->
+       <inertial>
+         <mass value="${end_effector_mass}" />
+         <origin xyz="0 0 0" rpy="0 0 0"/>
+         <inertia ixx="${0.4 * end_effector_mass * end_effector_radius}" ixy="0.0" ixz="0.0"
+         iyy="${0.4 * end_effector_mass * end_effector_radius}" iyz="0.0"
+         izz="${0.4 * end_effector_mass * end_effector_radius}" />
+       </inertial>
+      <!-- Visual properties -->
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="${end_effector_radius}"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="${end_effector_radius}"/>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0</mu>
+              <mu2>0</mu2>
+            </ode>
+          </friction>
+          <bounce/>
+          <contact>
+            <ode/>
+          </contact>
+        </surface>
+        <max_contacts>10</max_contacts>
+      </collision>
+    </link>
+    <!-- Gazebo material -->
+    <gazebo reference="${robot_namespace}/contact_link">
+      <material>Gazebo/${color}</material>
+    </gazebo>
+
+    <transmission name="${robot_namespace}/transmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="${robot_namespace}/rotary_joint">
+        <hardwareInterface>EffortJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="${robot_namespace}/motor">
+        <hardwareInterface>EffortJointInterface</hardwareInterface>
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+    </transmission>
+
+  </xacro:macro>
+
+</robot>
+
